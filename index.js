@@ -11,6 +11,8 @@ Schema.prototype.extend = function(obj, options) {
   // Deep clone the existing schema so we can add without changing it
   var newSchema = owl.deepCopy(this);
 
+  newSchema.options.__isExtended = true;
+  
   // Fix for callQueue arguments, todo: fix clone implementation
   newSchema.callQueue.forEach(function(k) {
     var args = [];
@@ -77,4 +79,99 @@ Model.prototype.init = function(doc, query, fn) {
 
   // If theres no discriminatorKey we can just call the original method
   return oldInit.apply(this, arguments);
+}
+
+
+
+/*** NEW METHODS ***/
+/** The following methods allow you to use queries to find specific types of objects. **/
+
+
+
+function getArguments(self, conditions, fields, options, callback) {
+  if ('function' == typeof conditions) {
+    callback = conditions;
+    conditions = {};
+    fields = null;
+    options = null;
+  } else if ('function' == typeof fields) {
+    callback = fields;
+    fields = null;
+    options = null;
+  } else if ('function' == typeof options) {
+    callback = options;
+    options = null;
+  }
+
+
+  if (typeof conditions == 'undefined') {
+    conditions = {};
+  }
+ 
+
+  
+  return {
+    conditions: conditions,
+    field: fields,
+    options: options,
+    callback: callback
+  }
+}
+
+
+
+function addDiscriminatorConditions(self, conditions) {
+  /** This only allows for one level of inheritance */
+  if (self.schema.options.__isExtended) {
+    var discriminatorKey = self.schema.options.discriminatorKey;
+    var discriminatorValue = self.modelName;
+    conditions[discriminatorKey] = discriminatorValue;
+  }
+}
+
+
+
+var oldFind = Model.find;
+Model.find = function(conditions, fields, options, callback) {
+  
+  var findArgs = getArguments(this, conditions, fields, options, callback); 
+  
+  addDiscriminatorConditions(this, findArgs.conditions);
+  
+  return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+  
+}
+
+Model.findById = function(id, fields, options, callback) {
+
+  var findArgs = getArguments(this, id, fields, options, callback); 
+  
+  findArgs.conditions = { _id: id };
+  addDiscriminatorConditions(this, findArgs.conditions);
+  
+
+  return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+
+}
+
+var oldCount = Model.count;
+Model.count = function(conditions, callback) {
+  if (typeof conditions == 'function') {
+    conditions = {}
+    callback = conditions;
+  }
+
+  addDiscriminatorConditions(this, conditions);
+
+  return oldCount.call(this, conditions, callback);
+
+}
+
+var oldUpdate = Model.update;
+Model.update = function(conditions, update, options, callback) {
+  var args = getArguments(this, conditions, update, options, callback);
+
+  addDiscriminatorConditions(this, args.conditions);
+
+  return oldUpdate.call(this, args.conditions, args.fields, args.options, args.callback);
 }

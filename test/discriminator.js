@@ -2,6 +2,9 @@ var mongoose = require('mongoose'),
     extend = require('../'),
     should = require('should');
 
+var Promise = require("bluebird");
+Promise.promisifyAll(mongoose);
+
 var Schema = mongoose.Schema;
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mongoose-schema-extend');
@@ -96,5 +99,48 @@ describe('schema discriminator key tests', function() {
         });
       });
     });
+
+    // it('should be able to query from specific schema and get correct models', function(done) {
+      
+    //   var accord = new Car({
+    //     make : 'Honda',
+    //     year : 1999
+    //   });
+
+    //   var civic = new Car({
+    //     make : 'Honda',
+    //     year : 2001
+    //   });
+
+    //   var busOne = new Bus({
+    //     route: 123
+    //   });
+
+    //   var busTwo = new Bus({
+    //     route: 345
+    //   });
+
+
+    //   Promise.all([
+    //     accord.save(),
+    //     civic.save(),
+    //     busOne.save(),
+    //     busTwo.save()
+    //   ])
+    //   .spread(function(accord, civic, busOne, busTwo) {
+    //     /**
+    //       Methods to test:
+
+    //       find()
+    //       findOne()
+    //       findById()
+    //       count()
+    //       create() ?
+    
+
+    //     */
+    //   })
+
+    // })
   });
 });
