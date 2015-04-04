@@ -144,6 +144,19 @@ Model.find = function(conditions, fields, options, callback) {
   
 };
 
+
+var oldFindOne = Model.findOne;
+Model.findOne = function(conditions, fields, options, callback) {
+  
+  var findArgs = getArguments(this, conditions, fields, options, callback); 
+  
+  addDiscriminatorConditions(this, findArgs.conditions);
+  
+  return oldFindOne.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+  
+};
+
+// Why have this extension ? Is it even possible to have the same Id on two objects in the same collection ?
 // Model.findById = function(id, fields, options, callback) {
 
 //   var findArgs = getArguments(this, id, fields, options, callback); 
