@@ -1,8 +1,13 @@
+
+'use strict';
+
 var mongoose = require('mongoose'),
     owl = require('owl-deepcopy');
 
 var Schema = mongoose.Schema,
     Model = mongoose.Model;
+
+var util = require('util');
 
 /**
  * Add a new function to the schema prototype to create a new schema by extending an existing one
@@ -55,7 +60,7 @@ Schema.prototype.extend = function(obj, options) {
  */
 var oldInit = Model.prototype.init;
 Model.prototype.init = function(doc, query, fn) {
-  var key = this.schema.options['discriminatorKey'];
+  var key = this.schema.options.discriminatorKey;
   if(key) {
 
     // If the discriminatorField contains a model name, we set the documents prototype to that model
@@ -68,8 +73,8 @@ Model.prototype.init = function(doc, query, fn) {
         process.nextTick(function() {
           fn.apply(this, arguments);
         });
-      }
-      var modelInstance = new model();
+      };
+      // var modelInstance = new model();
       this.schema = model.schema;
       var obj = oldInit.call(this, doc, query, newFn);
       obj.__proto__ = model.prototype;
@@ -79,7 +84,7 @@ Model.prototype.init = function(doc, query, fn) {
 
   // If theres no discriminatorKey we can just call the original method
   return oldInit.apply(this, arguments);
-}
+};
 
 
 
@@ -103,19 +108,16 @@ function getArguments(self, conditions, fields, options, callback) {
     options = null;
   }
 
-
   if (typeof conditions == 'undefined') {
     conditions = {};
   }
- 
-
   
   return {
     conditions: conditions,
-    field: fields,
+    fields: fields,
     options: options,
     callback: callback
-  }
+  };
 }
 
 
@@ -140,24 +142,37 @@ Model.find = function(conditions, fields, options, callback) {
   
   return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
   
-}
+};
 
-Model.findById = function(id, fields, options, callback) {
 
-  var findArgs = getArguments(this, id, fields, options, callback); 
+var oldFindOne = Model.findOne;
+Model.findOne = function(conditions, fields, options, callback) {
   
-  findArgs.conditions = { _id: id };
+  var findArgs = getArguments(this, conditions, fields, options, callback); 
+  
   addDiscriminatorConditions(this, findArgs.conditions);
   
+  return oldFindOne.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+  
+};
 
-  return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+// Why have this extension ? Is it even possible to have the same Id on two objects in the same collection ?
+// Model.findById = function(id, fields, options, callback) {
 
-}
+//   var findArgs = getArguments(this, id, fields, options, callback); 
+  
+//   findArgs.conditions = { _id: id };
+//   addDiscriminatorConditions(this, findArgs.conditions);
+  
+
+//   return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+
+// }
 
 var oldCount = Model.count;
 Model.count = function(conditions, callback) {
   if (typeof conditions == 'function') {
-    conditions = {}
+    conditions = {};
     callback = conditions;
   }
 
@@ -165,7 +180,7 @@ Model.count = function(conditions, callback) {
 
   return oldCount.call(this, conditions, callback);
 
-}
+};
 
 var oldUpdate = Model.update;
 Model.update = function(conditions, update, options, callback) {
@@ -174,4 +189,7 @@ Model.update = function(conditions, update, options, callback) {
   addDiscriminatorConditions(this, args.conditions);
 
   return oldUpdate.call(this, args.conditions, args.fields, args.options, args.callback);
-}
+};
+
+
+
