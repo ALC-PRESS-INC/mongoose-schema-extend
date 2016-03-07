@@ -142,6 +142,8 @@ Model.find = function(conditions, fields, options, callback) {
   
 }
 
+var oldFindById = Model.findById;
+
 Model.findById = function(id, fields, options, callback) {
 
   var findArgs = getArguments(this, id, fields, options, callback); 
@@ -150,7 +152,7 @@ Model.findById = function(id, fields, options, callback) {
   addDiscriminatorConditions(this, findArgs.conditions);
   
 
-  return oldFind.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
+  return oldFindById.call(this, findArgs.conditions, findArgs.fields, findArgs.options, findArgs.callback);
 
 }
 
